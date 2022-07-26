@@ -1,4 +1,5 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
+import cgi
 
 tasklist = ['Task 1', 'Task 2', 'Task 3']
 
@@ -35,7 +36,23 @@ class requestHandler(BaseHTTPRequestHandler):
           output += '</form>'
           output += '</body></html>'
           self.wfile.write(output.encode())
-          
+
+    def do_POST(self):
+      if self.path.endswith('/new'):
+        ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
+        pdict['boundary'] = bytes(pdict['boundary'],"utf-8")
+        content_len = int(self.headers.get('Content-length'))
+        pdict['CONTENT-LENGTH'] = content_len
+                          
+        if ctype == 'multipart/form-data':
+          fields = cgi.parse_multipart(self.rfile,pdict)
+          new_task = fields.get('task')
+          tasklist.append(new_task[0])
+      self.send_response(301)
+      self.send_header('content-type','text/html')
+      self.send_header('Location','/tasklist')
+      self.end_headers()
+      
         
 
 
